@@ -3,7 +3,7 @@
 namespace App\Observers;
 
 use App\Models\User;
-use Database\Seeders\CategorySeeder;
+use App\Support\DefaultUserCategories;
 
 class UserObserver
 {
@@ -16,7 +16,7 @@ class UserObserver
             return;
         }
 
-        foreach (CategorySeeder::defaults() as $index => $template) {
+        foreach (DefaultUserCategories::templates() as $index => $template) {
             $user->categories()->create([
                 ...$template,
                 'sort_order' => $index,
