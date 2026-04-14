@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,9 +29,10 @@ class Category extends Model
         ];
     }
 
-    public function scopeOrdered(Builder $query): Builder
+    #[Scope]
+    protected function ordered(Builder $query): void
     {
-        return $query->orderBy('sort_order', 'asc');
+        $query->orderBy('sort_order', 'asc');
     }
 
     public function user(): BelongsTo
