@@ -17,7 +17,6 @@ it('declares fillable attributes for mass assignment', function () {
         'color',
         'icon',
         'sort_order',
-        'is_default',
     ]);
 });
 

@@ -24,7 +24,6 @@ class CategoryFactory extends Factory
             'color' => fake()->hexColor(),
             'icon' => fake()->optional()->word(),
             'sort_order' => fake()->numberBetween(0, 100),
-            'is_default' => false,
         ];
     }
 }

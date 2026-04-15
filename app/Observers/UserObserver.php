@@ -20,7 +20,6 @@ class UserObserver
             $user->categories()->create([
                 ...$template,
                 'sort_order' => $index,
-                'is_default' => true,
             ]);
         }
     }
