@@ -1,7 +1,8 @@
+import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CategoryIcon } from '@/features/categories/category-icon-map';
 import { displayCategoryName } from '@/features/categories/display-category-name';
 import type { Category } from '@/features/categories/types';
-import { Pencil, Trash2 } from 'lucide-react';
 
 type CategoryListItemProps = {
     category: Category;
@@ -15,19 +16,18 @@ export function CategoryListItem({
     onDelete,
 }: CategoryListItemProps) {
     return (
-        <li className="flex flex-wrap items-center gap-3 px-4 py-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
             <span
                 className="size-4 shrink-0 rounded-full border border-border"
                 style={{ backgroundColor: category.color }}
                 aria-hidden
             />
+            <CategoryIcon
+                name={category.icon}
+                className="size-5 shrink-0 text-muted-foreground"
+            />
             <div className="min-w-0 flex-1">
                 <p className="font-medium">{displayCategoryName(category)}</p>
-                {category.icon ? (
-                    <p className="text-xs text-muted-foreground">
-                        {category.icon}
-                    </p>
-                ) : null}
             </div>
             <div className="flex shrink-0 gap-2">
                 <Button
@@ -50,6 +50,6 @@ export function CategoryListItem({
                     Excluir
                 </Button>
             </div>
-        </li>
+        </div>
     );
 }

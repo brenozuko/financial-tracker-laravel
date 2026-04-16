@@ -3,11 +3,13 @@
 use App\Models\Category;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Support\CategoryIcons;
 use App\Support\DefaultUserCategories;
 use Inertia\Testing\AssertableInertia as Assert;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\patch;
 
 it('redirects guests from the categories index', function () {
     get(route('categories.index'))->assertRedirect();
@@ -22,7 +24,9 @@ it('shows the categories index for authenticated users', function () {
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('categories/index')
-            ->has('categories'));
+            ->has('categories')
+            ->has('categoryIcons')
+            ->where('categoryIcons', CategoryIcons::values()));
 });
 
 it('lists categories in sort order', function () {
@@ -52,6 +56,74 @@ it('stores a new category', function () {
         ->assertSessionHas('success');
 
     expect(Category::query()->where('user_id', $user->id)->where('name', 'Custom Cat')->exists())->toBeTrue();
+});
+
+it('rejects store when icon is not allowed', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->post(route('categories.store'), [
+            'name' => 'Bad Icon',
+            'color' => '#aabbcc',
+            'icon' => 'not-a-real-lucide-icon',
+        ])
+        ->assertSessionHasErrors('icon');
+});
+
+it('reorders categories for the authenticated user', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+    $orderedIds = $user->categories()->ordered()->pluck('id')->all();
+    $reversed = array_reverse($orderedIds);
+
+    actingAs($user)
+        ->patch(route('categories.reorder'), ['ordered_ids' => $reversed])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($user->categories()->ordered()->pluck('id')->all())->toBe($reversed);
+});
+
+it('rejects reorder when ordered_ids is incomplete', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+    $orderedIds = $user->categories()->ordered()->pluck('id')->all();
+    $subset = array_slice($orderedIds, 0, max(1, count($orderedIds) - 1));
+
+    actingAs($user)
+        ->patch(route('categories.reorder'), ['ordered_ids' => $subset])
+        ->assertSessionHasErrors('ordered_ids');
+});
+
+it('rejects reorder when ordered_ids contains duplicates', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+    $orderedIds = $user->categories()->ordered()->pluck('id')->all();
+
+    $duplicate = [$orderedIds[0], $orderedIds[0], ...array_slice($orderedIds, 2)];
+
+    actingAs($user)
+        ->patch(route('categories.reorder'), ['ordered_ids' => $duplicate])
+        ->assertSessionHasErrors('ordered_ids');
+});
+
+it('rejects reorder when ordered_ids contains another users category', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+    $other = User::factory()->create();
+    $foreignCategory = Category::factory()->for($other)->create();
+    $orderedIds = $user->categories()->ordered()->pluck('id')->all();
+    $tampered = array_slice($orderedIds, 0, -1);
+    $tampered[] = $foreignCategory->id;
+
+    actingAs($user)
+        ->patch(route('categories.reorder'), ['ordered_ids' => $tampered])
+        ->assertSessionHasErrors(['ordered_ids.'.array_key_last($tampered)]);
+});
+
+it('redirects guests from reorder', function () {
+    patch(route('categories.reorder'), ['ordered_ids' => [1]])->assertRedirect();
 });
 
 it('updates a category', function () {

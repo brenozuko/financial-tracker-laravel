@@ -7,7 +7,8 @@ it('allows viewAny and create for any user', function () {
     $user = User::factory()->create();
 
     expect($user->can('viewAny', Category::class))->toBeTrue()
-        ->and($user->can('create', Category::class))->toBeTrue();
+        ->and($user->can('create', Category::class))->toBeTrue()
+        ->and($user->can('reorder', Category::class))->toBeTrue();
 });
 
 it('allows view and update when the category belongs to the user', function () {

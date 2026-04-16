@@ -49,6 +49,21 @@ class CategoryService
         return $category->fresh();
     }
 
+    /**
+     * @param  list<int>  $orderedIds
+     */
+    public function reorderForUser(User $user, array $orderedIds): void
+    {
+        DB::transaction(function () use ($user, $orderedIds): void {
+            foreach ($orderedIds as $index => $id) {
+                Category::query()
+                    ->where('user_id', $user->id)
+                    ->whereKey($id)
+                    ->update(['sort_order' => $index]);
+            }
+        });
+    }
+
     public function deleteOrFail(Category $category): void
     {
         if (! $category->transactions()->exists()) {

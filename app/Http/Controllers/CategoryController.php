@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReorderCategoriesRequest;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Services\CategoryService;
+use App\Support\CategoryIcons;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,7 +28,18 @@ class CategoryController extends Controller
 
         return Inertia::render('categories/index', [
             'categories' => $this->categoryService->listOrderedForUser($request->user()),
+            'categoryIcons' => CategoryIcons::values(),
         ]);
+    }
+
+    public function reorder(ReorderCategoriesRequest $request): RedirectResponse
+    {
+        /** @var list<int> $orderedIds */
+        $orderedIds = array_map(intval(...), $request->validated('ordered_ids'));
+
+        $this->categoryService->reorderForUser($request->user(), $orderedIds);
+
+        return redirect()->back()->with('success', __('Categories reordered.'));
     }
 
     /**

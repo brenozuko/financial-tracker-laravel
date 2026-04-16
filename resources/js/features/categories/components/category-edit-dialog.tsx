@@ -12,6 +12,7 @@ import { CategoryFormFields } from '@/features/categories/components/category-fo
 import type { CategoryFormValues } from '@/features/categories/types';
 
 type CategoryEditDialogProps = {
+    categoryIcons: string[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (e: React.FormEvent) => void;
@@ -26,6 +27,7 @@ type CategoryEditDialogProps = {
 };
 
 export function CategoryEditDialog({
+    categoryIcons,
     open,
     onOpenChange,
     onSubmit,
@@ -47,6 +49,7 @@ export function CategoryEditDialog({
                     </DialogHeader>
                     <CategoryFormFields
                         idPrefix="edit"
+                        categoryIcons={categoryIcons}
                         values={values}
                         errors={errors}
                         onChange={onFieldChange}

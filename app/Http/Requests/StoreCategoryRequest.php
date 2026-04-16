@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Category;
+use App\Support\CategoryIcons;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCategoryRequest extends FormRequest
 {
@@ -26,7 +28,7 @@ class StoreCategoryRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'icon' => ['nullable', 'string', 'max:50'],
+            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::values())],
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ];
     }

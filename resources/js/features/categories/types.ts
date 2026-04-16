@@ -11,5 +11,4 @@ export type CategoryFormValues = {
     name: string;
     color: string;
     icon: string;
-    sort_order: string | number;
 };

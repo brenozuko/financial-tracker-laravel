@@ -12,6 +12,7 @@ import { CategoryFormFields } from '@/features/categories/components/category-fo
 import type { CategoryFormValues } from '@/features/categories/types';
 
 type CategoryCreateDialogProps = {
+    categoryIcons: string[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (e: React.FormEvent) => void;
@@ -26,6 +27,7 @@ type CategoryCreateDialogProps = {
 };
 
 export function CategoryCreateDialog({
+    categoryIcons,
     open,
     onOpenChange,
     onSubmit,
@@ -42,11 +44,12 @@ export function CategoryCreateDialog({
                     <DialogHeader>
                         <DialogTitle>Nova categoria</DialogTitle>
                         <DialogDescription>
-                            Defina nome, cor e opcionalmente ícone e ordem.
+                            Defina nome, cor e opcionalmente um ícone.
                         </DialogDescription>
                     </DialogHeader>
                     <CategoryFormFields
                         idPrefix="create"
+                        categoryIcons={categoryIcons}
                         values={values}
                         errors={errors}
                         onChange={onFieldChange}

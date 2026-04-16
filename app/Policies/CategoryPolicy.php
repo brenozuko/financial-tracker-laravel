@@ -46,4 +46,12 @@ class CategoryPolicy
     {
         return $category->user_id === $user->id;
     }
+
+    /**
+     * Determine whether the user can reorder their categories.
+     */
+    public function reorder(User $user): bool
+    {
+        return $this->viewAny($user);
+    }
 }

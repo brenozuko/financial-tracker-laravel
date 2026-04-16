@@ -9,15 +9,19 @@ import { CategoriesHeader } from '@/features/categories/components/categories-he
 import { CategoryCreateDialog } from '@/features/categories/components/category-create-dialog';
 import { CategoryEditDialog } from '@/features/categories/components/category-edit-dialog';
 import { CategoryFlashMessages } from '@/features/categories/components/category-flash-messages';
-import { CategoryList } from '@/features/categories/components/category-list';
+import { SortableCategoryList } from '@/features/categories/components/sortable-category-list';
 import type { Category } from '@/features/categories/types';
 import { useAppPage } from '@/hooks/use-app-page';
 
 type CategoriesIndexPageProps = {
     categories: Category[];
+    categoryIcons: string[];
 };
 
-export default function CategoriesIndex({ categories }: CategoriesIndexPageProps) {
+export default function CategoriesIndex({
+    categories,
+    categoryIcons,
+}: CategoriesIndexPageProps) {
     const { flash } = useAppPage().props;
     const [createOpen, setCreateOpen] = useState(false);
     const [editing, setEditing] = useState<Category | null>(null);
@@ -26,14 +30,12 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
         name: '',
         color: '#6b7280',
         icon: '',
-        sort_order: '' as string | number,
     });
 
     const editForm = useForm({
         name: '',
         color: '#6b7280',
         icon: '',
-        sort_order: '' as string | number,
     });
 
     const openCreate = () => {
@@ -47,7 +49,6 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             name: category.name,
             color: category.color,
             icon: category.icon ?? '',
-            sort_order: category.sort_order,
         });
         editForm.clearErrors();
         setEditing(category);
@@ -59,10 +60,6 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             name: data.name,
             color: data.color,
             icon: data.icon || null,
-            sort_order:
-                data.sort_order === '' || data.sort_order === null
-                    ? null
-                    : Number(data.sort_order),
         }));
         createForm.post(store.url(), {
             preserveScroll: true,
@@ -84,10 +81,6 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             name: data.name,
             color: data.color,
             icon: data.icon || null,
-            sort_order:
-                data.sort_order === '' || data.sort_order === null
-                    ? null
-                    : Number(data.sort_order),
         }));
         editForm.put(update.url(editing), {
             preserveScroll: true,
@@ -112,7 +105,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <CategoryFlashMessages flash={flash} />
                 <CategoriesHeader onNewCategory={openCreate} />
-                <CategoryList
+                <SortableCategoryList
                     categories={categories}
                     onEdit={openEdit}
                     onDelete={handleDestroy}
@@ -120,6 +113,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             </div>
 
             <CategoryCreateDialog
+                categoryIcons={categoryIcons}
                 open={createOpen}
                 onOpenChange={setCreateOpen}
                 onSubmit={submitCreate}
@@ -137,6 +131,7 @@ export default function CategoriesIndex({ categories }: CategoriesIndexPageProps
             />
 
             <CategoryEditDialog
+                categoryIcons={categoryIcons}
                 open={editing !== null}
                 onOpenChange={(open) => !open && setEditing(null)}
                 onSubmit={submitEdit}
