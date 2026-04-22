@@ -10,7 +10,10 @@ it('redirects guests to the login page', function () {
 });
 
 it('allows authenticated users to visit the dashboard', function () {
-    actingAs(User::factory()->create());
+    /** @var User $user */
+    $user = User::factory()->createOne();
+
+    actingAs($user);
 
     get(route('dashboard'))->assertSuccessful();
 });
