@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -47,7 +48,19 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request): RedirectResponse
     {
-        $this->categoryService->store($request->user(), $request->validated());
+        $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::values())],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $this->categoryService->store($request->user(), [
+            'name' => $request->input('name'),
+            'color' => $request->input('color'),
+            'icon' => $request->input('icon'),
+            'sort_order' => $request->input('sort_order'),
+        ]);
 
         return redirect()->back()->with('success', __('Category created.'));
     }
@@ -55,9 +68,18 @@ class CategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
+    public function update(Request $request, Category $category): RedirectResponse
     {
-        $this->categoryService->update($category, $request->validated());
+        $this->authorize('update', $category);
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::values())],
+            'sort_order' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $this->categoryService->update($category, $request->all());
 
         return redirect()->back()->with('success', __('Category updated.'));
     }
