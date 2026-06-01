@@ -7,7 +7,6 @@ it('creates default categories when a user is created', function () {
     $user = User::factory()->create();
 
     expect($user->categories()->count())->toBe(9)
-        ->and($user->categories()->where('is_default', true)->count())->toBe(9)
         ->and($user->categories()->ordered()->first()->name)->toBe('Food');
 });
 

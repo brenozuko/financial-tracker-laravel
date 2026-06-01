@@ -6,11 +6,11 @@ import SecurityController from '@/actions/App/Http/Controllers/Settings/Security
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
-import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useTwoFactorAuth } from '@/hooks/use-two-factor-auth';
+import TwoFactorRecoveryCodes from '@/features/settings/components/two-factor-recovery-codes';
+import TwoFactorSetupModal from '@/features/settings/components/two-factor-setup-modal';
+import { useTwoFactorAuth } from '@/features/settings/hooks/use-two-factor-auth';
 import { edit } from '@/routes/security';
 import { disable, enable } from '@/routes/two-factor';
 

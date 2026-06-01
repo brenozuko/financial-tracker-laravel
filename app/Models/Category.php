@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['user_id', 'name', 'color', 'icon', 'sort_order', 'is_default'])]
+#[Fillable(['user_id', 'name', 'color', 'icon', 'sort_order'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
@@ -25,7 +25,6 @@ class Category extends Model
         return [
             'user_id' => 'integer',
             'sort_order' => 'integer',
-            'is_default' => 'boolean',
         ];
     }
 
