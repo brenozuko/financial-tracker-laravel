@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { LayoutGrid, Receipt, Tags } from 'lucide-react';
+import { CalendarClock, LayoutGrid, Receipt, Tags } from 'lucide-react';
 import { index as categoriesIndex } from '@/actions/App/Http/Controllers/CategoryController';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -13,7 +13,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard, transactions } from '@/routes';
+import { dashboard, fixedExpenses, transactions } from '@/routes';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         title: 'Transações',
         href: transactions(),
         icon: Receipt,
+    },
+    {
+        title: 'Contas fixas',
+        href: fixedExpenses(),
+        icon: CalendarClock,
     },
     {
         title: 'Categorias',
