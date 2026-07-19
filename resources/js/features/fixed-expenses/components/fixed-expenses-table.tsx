@@ -1,24 +1,5 @@
-import {
-    CalendarCheck,
-    Check,
-    MoreVertical,
-    Pause,
-    Pencil,
-    Play,
-    SkipForward,
-    Trash2,
-} from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+import { CalendarCheck } from 'lucide-react';
+import { useMemo } from 'react';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -28,13 +9,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { CategoryIcon } from '@/features/categories/category-icon-map';
+import { AmountCell } from '@/features/fixed-expenses/components/amount-cell';
+import { FixedExpenseOccurrenceCard } from '@/features/fixed-expenses/components/fixed-expense-occurrence-card';
+import { OccurrenceActions } from '@/features/fixed-expenses/components/occurrence-actions';
+import { OccurrenceStatusBadge } from '@/features/fixed-expenses/components/occurrence-status-badge';
 import {
-    amountToCurrencyDigits,
     buildMonthKey,
-    currencyDigitsToAmount,
     deriveOccurrenceStatus,
     formatCurrency,
-    formatCurrencyMaskFromDigits,
     formatMonthHeading,
     formatShortDate,
     formatWeekdayShort,
@@ -43,14 +25,11 @@ import {
     MONTH_OPTIONS,
     parseMonthKey,
     recurrenceLabel,
-    statusBadgeClassName,
-    statusLabel,
 } from '@/features/fixed-expenses/format';
 import type {
     FixedExpense,
     FixedExpenseOccurrence,
 } from '@/features/fixed-expenses/types';
-import { cn } from '@/lib/utils';
 
 type FixedExpensesTableProps = {
     occurrences: FixedExpenseOccurrence[];
@@ -153,111 +132,6 @@ function MonthYearPicker({
     );
 }
 
-function AmountCell({
-    occurrence,
-    onAdjustAmount,
-}: {
-    occurrence: FixedExpenseOccurrence;
-    onAdjustAmount: (occurrence: FixedExpenseOccurrence, amount: number) => void;
-}) {
-    const [isEditing, setIsEditing] = useState(false);
-    const [digits, setDigits] = useState(() =>
-        amountToCurrencyDigits(occurrence.expected_amount),
-    );
-    const [lastSyncedAmount, setLastSyncedAmount] = useState(
-        occurrence.expected_amount,
-    );
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    if (lastSyncedAmount !== occurrence.expected_amount) {
-        setLastSyncedAmount(occurrence.expected_amount);
-        setDigits(amountToCurrencyDigits(occurrence.expected_amount));
-        setIsEditing(false);
-    }
-
-    useEffect(() => {
-        if (isEditing) {
-            inputRef.current?.focus();
-            inputRef.current?.select();
-        }
-    }, [isEditing]);
-
-    const maskedValue = useMemo(
-        () => formatCurrencyMaskFromDigits(digits),
-        [digits],
-    );
-
-    const startEditing = () => {
-        setDigits(amountToCurrencyDigits(occurrence.expected_amount));
-        setIsEditing(true);
-    };
-
-    const cancelEditing = () => {
-        setDigits(amountToCurrencyDigits(occurrence.expected_amount));
-        setIsEditing(false);
-    };
-
-    const commitAmount = () => {
-        const parsed = currencyDigitsToAmount(digits);
-
-        setIsEditing(false);
-
-        if (parsed !== occurrence.expected_amount) {
-            onAdjustAmount(occurrence, parsed);
-        }
-    };
-
-    if (occurrence.paid_at) {
-        return (
-            <span className="font-medium text-muted-foreground line-through">
-                {formatCurrency(
-                    occurrence.paid_amount ?? occurrence.expected_amount,
-                )}
-            </span>
-        );
-    }
-
-    if (!isEditing) {
-        return (
-            <button
-                type="button"
-                onClick={startEditing}
-                className={cn(
-                    'rounded-md px-2 py-1 text-right font-medium tabular-nums',
-                    'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                )}
-                aria-label={`Valor previsto ${formatCurrency(occurrence.expected_amount)}. Clique para editar.`}
-            >
-                {formatCurrency(occurrence.expected_amount)}
-            </button>
-        );
-    }
-
-    return (
-        <Input
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            value={maskedValue}
-            onChange={(e) => {
-                setDigits(e.target.value.replace(/\D/g, ''));
-            }}
-            onBlur={commitAmount}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                    e.currentTarget.blur();
-                }
-
-                if (e.key === 'Escape') {
-                    cancelEditing();
-                }
-            }}
-            className="h-8 w-32 text-right tabular-nums"
-            aria-label="Valor previsto"
-        />
-    );
-}
-
 function TableRow({
     occurrence,
     windowDays,
@@ -321,81 +195,18 @@ function TableRow({
                 />
             </td>
             <td className="px-4 py-3">
-                <Badge
-                    variant="outline"
-                    className={cn('text-xs', statusBadgeClassName(status))}
-                >
-                    {statusLabel(status)}
-                </Badge>
+                <OccurrenceStatusBadge status={status} />
             </td>
             <td className="px-4 py-3">
-                <div className="flex items-center justify-end gap-1">
-                    {!isPaid && (
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => onMarkAsPaid(occurrence)}
-                        >
-                            <Check className="size-4" />
-                            <span className="sr-only sm:not-sr-only sm:ml-1">
-                                Pagar
-                            </span>
-                        </Button>
-                    )}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-8"
-                                aria-label="Mais ações"
-                            >
-                                <MoreVertical className="size-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {!isPaid && (
-                                <DropdownMenuItem
-                                    onSelect={() => onSkip(occurrence)}
-                                >
-                                    <SkipForward className="size-4" />
-                                    Pular ocorrência
-                                </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                                onSelect={() => onEditExpense(expense)}
-                            >
-                                <Pencil className="size-4" />
-                                Editar conta
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onSelect={() => onToggleActive(expense)}
-                            >
-                                {expense.is_active ? (
-                                    <>
-                                        <Pause className="size-4" />
-                                        Pausar conta
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="size-4" />
-                                        Reativar conta
-                                    </>
-                                )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => onDeleteExpense(expense)}
-                            >
-                                <Trash2 className="size-4" />
-                                Excluir conta
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                <OccurrenceActions
+                    occurrence={occurrence}
+                    isPaid={isPaid}
+                    onMarkAsPaid={onMarkAsPaid}
+                    onSkip={onSkip}
+                    onEditExpense={onEditExpense}
+                    onDeleteExpense={onDeleteExpense}
+                    onToggleActive={onToggleActive}
+                />
             </td>
         </tr>
     );
@@ -435,14 +246,24 @@ export function FixedExpensesTable({
 
     const monthLabel = formatMonthHeading(`${selectedMonth}-01`);
 
+    const rowProps = {
+        windowDays,
+        onAdjustAmount,
+        onMarkAsPaid,
+        onSkip,
+        onEditExpense,
+        onDeleteExpense,
+        onToggleActive,
+    };
+
     return (
         <div className="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border bg-muted/30 px-4 py-3">
+            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3 md:flex-row md:items-end md:justify-between md:gap-4">
                 <MonthYearPicker
                     selectedMonth={selectedMonth}
                     onMonthChange={onMonthChange}
                 />
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+                <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-1">
                     <div>
                         <span className="text-muted-foreground">
                             Previsto:{' '}
@@ -479,53 +300,59 @@ export function FixedExpensesTable({
                     </div>
                 </div>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full min-w-[640px] text-left">
-                        <thead>
-                            <tr className="border-b border-border bg-muted/20 text-xs text-muted-foreground">
-                                <th className="px-4 py-2.5 font-medium">
-                                    Vencimento
-                                </th>
-                                <th className="px-4 py-2.5 font-medium">
-                                    Conta
-                                </th>
-                                <th className="hidden px-4 py-2.5 font-medium md:table-cell">
-                                    Prestador
-                                </th>
-                                <th className="hidden px-4 py-2.5 font-medium lg:table-cell">
-                                    Categoria
-                                </th>
-                                <th className="hidden px-4 py-2.5 font-medium sm:table-cell">
-                                    Ciclo
-                                </th>
-                                <th className="px-4 py-2.5 font-medium">
-                                    Valor
-                                </th>
-                                <th className="px-4 py-2.5 font-medium">
-                                    Status
-                                </th>
-                                <th className="px-4 py-2.5 text-right font-medium">
-                                    Ações
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows.map((occurrence) => (
-                                <TableRow
-                                    key={occurrence.id}
-                                    occurrence={occurrence}
-                                    windowDays={windowDays}
-                                    onAdjustAmount={onAdjustAmount}
-                                    onMarkAsPaid={onMarkAsPaid}
-                                    onSkip={onSkip}
-                                    onEditExpense={onEditExpense}
-                                    onDeleteExpense={onDeleteExpense}
-                                    onToggleActive={onToggleActive}
-                                />
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <>
+                    <div className="flex flex-col gap-3 p-3 md:hidden">
+                        {rows.map((occurrence) => (
+                            <FixedExpenseOccurrenceCard
+                                key={occurrence.id}
+                                occurrence={occurrence}
+                                {...rowProps}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="hidden overflow-x-auto md:block">
+                        <table className="w-full min-w-[640px] text-left">
+                            <thead>
+                                <tr className="border-b border-border bg-muted/20 text-xs text-muted-foreground">
+                                    <th className="px-4 py-2.5 font-medium">
+                                        Vencimento
+                                    </th>
+                                    <th className="px-4 py-2.5 font-medium">
+                                        Conta
+                                    </th>
+                                    <th className="hidden px-4 py-2.5 font-medium md:table-cell">
+                                        Prestador
+                                    </th>
+                                    <th className="hidden px-4 py-2.5 font-medium lg:table-cell">
+                                        Categoria
+                                    </th>
+                                    <th className="hidden px-4 py-2.5 font-medium sm:table-cell">
+                                        Ciclo
+                                    </th>
+                                    <th className="px-4 py-2.5 font-medium">
+                                        Valor
+                                    </th>
+                                    <th className="px-4 py-2.5 font-medium">
+                                        Status
+                                    </th>
+                                    <th className="px-4 py-2.5 text-right font-medium">
+                                        Ações
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.map((occurrence) => (
+                                    <TableRow
+                                        key={occurrence.id}
+                                        occurrence={occurrence}
+                                        {...rowProps}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
         </div>
     );

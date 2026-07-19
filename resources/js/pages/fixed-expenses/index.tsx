@@ -513,7 +513,7 @@ export default function FixedExpensesIndex({
     return (
         <>
             <Head title="Contas fixas" />
-            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <FixedExpenseFlashMessages success={flashSuccess} />
                 <FixedExpensesHeader onNewFixedExpense={openCreate} />
 

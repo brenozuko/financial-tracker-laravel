@@ -1,3 +1,4 @@
+import { CurrencyInput } from '@/components/currency-input';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,15 +66,11 @@ export function TransactionFormFields({
 
             <div className="grid gap-2">
                 <Label htmlFor={`${idPrefix}-amount`}>Valor (R$)</Label>
-                <Input
+                <CurrencyInput
                     id={`${idPrefix}-amount`}
                     name="amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
                     value={values.amount}
-                    onChange={(e) => onChange('amount', e.target.value)}
+                    onValueChange={(value) => onChange('amount', value)}
                     required
                 />
                 <InputError message={errors.amount} />

@@ -18,7 +18,11 @@ export function FixedExpensesHeader({
                     Previsão mensal e pagamentos das suas despesas recorrentes.
                 </p>
             </div>
-            <Button type="button" onClick={onNewFixedExpense}>
+            <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={onNewFixedExpense}
+            >
                 <Plus className="mr-2 size-4" />
                 Nova conta fixa
             </Button>

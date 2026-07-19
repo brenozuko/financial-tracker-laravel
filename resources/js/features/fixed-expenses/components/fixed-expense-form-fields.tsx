@@ -1,3 +1,4 @@
+import { CurrencyInput } from '@/components/currency-input';
 import InputError from '@/components/input-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -99,15 +100,13 @@ export function FixedExpenseFormFields({
                 <Label htmlFor={`${idPrefix}-amount`}>
                     Valor padr&atilde;o (R$)
                 </Label>
-                <Input
+                <CurrencyInput
                     id={`${idPrefix}-amount`}
                     name="default_amount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
                     value={values.default_amount}
-                    onChange={(e) => onChange('default_amount', e.target.value)}
+                    onValueChange={(value) =>
+                        onChange('default_amount', value)
+                    }
                     required
                 />
                 <InputError message={errors.default_amount} />

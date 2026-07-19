@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CurrencyInput } from '@/components/currency-input';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -129,14 +130,11 @@ export function MarkAsPaidDialog({
                             <Label htmlFor="mark-paid-amount">
                                 Valor pago (R$)
                             </Label>
-                            <Input
+                            <CurrencyInput
                                 id="mark-paid-amount"
-                                type="number"
-                                step="0.01"
-                                min="0"
                                 value={values.paid_amount}
-                                onChange={(e) =>
-                                    updateField('paid_amount', e.target.value)
+                                onValueChange={(value) =>
+                                    updateField('paid_amount', value)
                                 }
                                 required
                             />
