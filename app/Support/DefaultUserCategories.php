@@ -5,6 +5,16 @@ namespace App\Support;
 final class DefaultUserCategories
 {
     /**
+     * Name of the default catch-all category (last template).
+     */
+    public static function catchAllName(): string
+    {
+        $templates = self::templates();
+
+        return $templates[array_key_last($templates)]['name'];
+    }
+
+    /**
      * Default category rows applied to users (registration + backfill seeder).
      *
      * @return list<array{name: string, color: string, icon: string}>
