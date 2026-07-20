@@ -1,5 +1,12 @@
-import { CalendarCheck } from 'lucide-react';
-import { useMemo } from 'react';
+import {
+    CalendarCheck,
+    ChevronLeft,
+    ChevronRight,
+    Search,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -31,6 +38,8 @@ import type {
     FixedExpenseOccurrence,
 } from '@/features/fixed-expenses/types';
 
+const PAGE_SIZE = 10;
+
 type FixedExpensesTableProps = {
     occurrences: FixedExpenseOccurrence[];
     selectedMonth: string;
@@ -60,15 +69,42 @@ type MonthYearPickerProps = {
     onMonthChange: (month: string) => void;
 };
 
+type TablePaginationProps = {
+    page: number;
+    totalPages: number;
+    totalItems: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
+};
+
+function matchesSearch(
+    occurrence: FixedExpenseOccurrence,
+    query: string,
+): boolean {
+    const normalized = query.trim().toLocaleLowerCase('pt-BR');
+
+    if (!normalized) {
+        return true;
+    }
+
+    const expense = occurrence.fixed_expense;
+    const haystack = [
+        expense.name,
+        expense.provider_name ?? '',
+        expense.category.name,
+    ]
+        .join(' ')
+        .toLocaleLowerCase('pt-BR');
+
+    return haystack.includes(normalized);
+}
+
 function MonthYearPicker({
     selectedMonth,
     onMonthChange,
 }: MonthYearPickerProps) {
     const { year, month } = parseMonthKey(selectedMonth);
-    const yearOptions = useMemo(
-        () => getYearOptions(year),
-        [year],
-    );
+    const yearOptions = useMemo(() => getYearOptions(year), [year]);
 
     return (
         <div className="flex flex-wrap items-end gap-3">
@@ -85,10 +121,7 @@ function MonthYearPicker({
                         onMonthChange(buildMonthKey(year, nextMonth))
                     }
                 >
-                    <SelectTrigger
-                        id="fixed-expenses-month-select"
-                        className="h-9 w-36"
-                    >
+                    <SelectTrigger id="fixed-expenses-month-select" className="h-9 w-36">
                         <SelectValue placeholder="Mês" />
                     </SelectTrigger>
                     <SelectContent>
@@ -113,10 +146,7 @@ function MonthYearPicker({
                         onMonthChange(buildMonthKey(nextYear, month))
                     }
                 >
-                    <SelectTrigger
-                        id="fixed-expenses-year-select"
-                        className="h-9 w-24"
-                    >
+                    <SelectTrigger id="fixed-expenses-year-select" className="h-9 w-24">
                         <SelectValue placeholder="Ano" />
                     </SelectTrigger>
                     <SelectContent>
@@ -127,6 +157,55 @@ function MonthYearPicker({
                         ))}
                     </SelectContent>
                 </Select>
+            </div>
+        </div>
+    );
+}
+
+function TablePagination({
+    page,
+    totalPages,
+    totalItems,
+    pageSize,
+    onPageChange,
+}: TablePaginationProps) {
+    const from = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+    const to = Math.min(page * pageSize, totalItems);
+
+    return (
+        <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+                Mostrando{' '}
+                <span className="font-medium text-foreground">
+                    {from}–{to}
+                </span>{' '}
+                de{' '}
+                <span className="font-medium text-foreground">{totalItems}</span>
+            </p>
+            <div className="flex items-center gap-2">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(page - 1)}
+                    disabled={page <= 1}
+                >
+                    <ChevronLeft />
+                    Anterior
+                </Button>
+                <span className="min-w-20 text-center text-sm text-muted-foreground">
+                    {page} / {totalPages}
+                </span>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(page + 1)}
+                    disabled={page >= totalPages}
+                >
+                    Próxima
+                    <ChevronRight />
+                </Button>
             </div>
         </div>
     );
@@ -224,7 +303,10 @@ export function FixedExpensesTable({
     onDeleteExpense,
     onToggleActive,
 }: FixedExpensesTableProps) {
-    const rows = useMemo(
+    const [page, setPage] = useState(1);
+    const [search, setSearch] = useState('');
+
+    const monthRows = useMemo(
         () =>
             [...occurrences]
                 .filter((o) => monthKey(o.due_date) === selectedMonth)
@@ -232,19 +314,43 @@ export function FixedExpensesTable({
         [occurrences, selectedMonth],
     );
 
+    const rows = useMemo(
+        () => monthRows.filter((occurrence) => matchesSearch(occurrence, search)),
+        [monthRows, search],
+    );
+
     const summary = useMemo(() => {
-        const total = rows.reduce((acc, o) => acc + o.expected_amount, 0);
-        const paid = rows
+        const total = monthRows.reduce((acc, o) => acc + o.expected_amount, 0);
+        const paid = monthRows
             .filter((o) => o.paid_at)
             .reduce((acc, o) => acc + (o.paid_amount ?? o.expected_amount), 0);
-        const pending = rows
+        const pending = monthRows
             .filter((o) => !o.paid_at)
             .reduce((acc, o) => acc + o.expected_amount, 0);
 
         return { total, paid, pending };
-    }, [rows]);
+    }, [monthRows]);
 
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
     const monthLabel = formatMonthHeading(`${selectedMonth}-01`);
+
+    useEffect(() => {
+        setPage(1);
+    }, [selectedMonth, search]);
+
+    useEffect(() => {
+        if (page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [page, totalPages]);
+
+    const paginatedRows = useMemo(() => {
+        const start = (page - 1) * PAGE_SIZE;
+
+        return rows.slice(start, start + PAGE_SIZE);
+    }, [rows, page]);
+
+    const hasActiveSearch = search.trim().length > 0;
 
     const rowProps = {
         windowDays,
@@ -257,103 +363,139 @@ export function FixedExpensesTable({
     };
 
     return (
-        <div className="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-            <div className="flex flex-col gap-3 border-b border-border bg-muted/30 px-4 py-3 md:flex-row md:items-end md:justify-between md:gap-4">
-                <MonthYearPicker
-                    selectedMonth={selectedMonth}
-                    onMonthChange={onMonthChange}
-                />
-                <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-1">
-                    <div>
-                        <span className="text-muted-foreground">
-                            Previsto:{' '}
-                        </span>
-                        <span className="font-semibold">
-                            {formatCurrency(summary.total)}
-                        </span>
+        <div className="flex flex-col gap-4">
+            <div className="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                <div className="flex flex-col gap-3 bg-muted/30 px-4 py-3 md:flex-row md:items-end md:justify-between md:gap-4">
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-end sm:gap-4 md:max-w-2xl">
+                        <MonthYearPicker
+                            selectedMonth={selectedMonth}
+                            onMonthChange={onMonthChange}
+                        />
+                        <div className="relative min-w-0 flex-1">
+                            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                id="fixed-expenses-search"
+                                type="search"
+                                value={search}
+                                onChange={(event) =>
+                                    setSearch(event.target.value)
+                                }
+                                placeholder="Buscar por conta, prestador ou categoria…"
+                                className="bg-background pl-9"
+                                aria-label="Buscar contas fixas"
+                            />
+                        </div>
                     </div>
-                    <div>
-                        <span className="text-muted-foreground">A pagar: </span>
-                        <span className="font-semibold text-amber-700 dark:text-amber-300">
-                            {formatCurrency(summary.pending)}
-                        </span>
-                    </div>
-                    <div>
-                        <span className="text-muted-foreground">Pago: </span>
-                        <span className="font-semibold text-green-700 dark:text-green-300">
-                            {formatCurrency(summary.paid)}
-                        </span>
+                    <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm md:flex md:flex-wrap md:items-center md:gap-x-6 md:gap-y-1">
+                        <div>
+                            <span className="text-muted-foreground">
+                                Previsto:{' '}
+                            </span>
+                            <span className="font-semibold">
+                                {formatCurrency(summary.total)}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground">
+                                A pagar:{' '}
+                            </span>
+                            <span className="font-semibold text-amber-700 dark:text-amber-300">
+                                {formatCurrency(summary.pending)}
+                            </span>
+                        </div>
+                        <div>
+                            <span className="text-muted-foreground">
+                                Pago:{' '}
+                            </span>
+                            <span className="font-semibold text-green-700 dark:text-green-300">
+                                {formatCurrency(summary.paid)}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {rows.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                    <CalendarCheck className="size-10 text-muted-foreground/50" />
-                    <div>
-                        <p className="font-medium text-muted-foreground">
-                            Nenhuma ocorrência em {monthLabel}
-                        </p>
-                        <p className="text-sm text-muted-foreground/70">
-                            Cadastre uma conta fixa ou escolha outro mês.
-                        </p>
+            <div className="overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
+                {rows.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                        <CalendarCheck className="size-10 text-muted-foreground/50" />
+                        <div>
+                            <p className="font-medium text-muted-foreground">
+                                {hasActiveSearch
+                                    ? 'Nenhuma conta encontrada'
+                                    : `Nenhuma ocorrência em ${monthLabel}`}
+                            </p>
+                            <p className="text-sm text-muted-foreground/70">
+                                {hasActiveSearch
+                                    ? 'Tente outro termo de busca.'
+                                    : 'Cadastre uma conta fixa ou escolha outro mês.'}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            ) : (
-                <>
-                    <div className="flex flex-col gap-3 p-3 md:hidden">
-                        {rows.map((occurrence) => (
-                            <FixedExpenseOccurrenceCard
-                                key={occurrence.id}
-                                occurrence={occurrence}
-                                {...rowProps}
-                            />
-                        ))}
-                    </div>
+                ) : (
+                    <>
+                        <div className="flex flex-col gap-3 p-3 md:hidden">
+                            {paginatedRows.map((occurrence) => (
+                                <FixedExpenseOccurrenceCard
+                                    key={occurrence.id}
+                                    occurrence={occurrence}
+                                    {...rowProps}
+                                />
+                            ))}
+                        </div>
 
-                    <div className="hidden overflow-x-auto md:block">
-                        <table className="w-full min-w-[640px] text-left">
-                            <thead>
-                                <tr className="border-b border-border bg-muted/20 text-xs text-muted-foreground">
-                                    <th className="px-4 py-2.5 font-medium">
-                                        Vencimento
-                                    </th>
-                                    <th className="px-4 py-2.5 font-medium">
-                                        Conta
-                                    </th>
-                                    <th className="hidden px-4 py-2.5 font-medium md:table-cell">
-                                        Prestador
-                                    </th>
-                                    <th className="hidden px-4 py-2.5 font-medium lg:table-cell">
-                                        Categoria
-                                    </th>
-                                    <th className="hidden px-4 py-2.5 font-medium sm:table-cell">
-                                        Ciclo
-                                    </th>
-                                    <th className="px-4 py-2.5 font-medium">
-                                        Valor
-                                    </th>
-                                    <th className="px-4 py-2.5 font-medium">
-                                        Status
-                                    </th>
-                                    <th className="px-4 py-2.5 text-right font-medium">
-                                        Ações
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows.map((occurrence) => (
-                                    <TableRow
-                                        key={occurrence.id}
-                                        occurrence={occurrence}
-                                        {...rowProps}
-                                    />
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )}
+                        <div className="hidden overflow-x-auto md:block">
+                            <table className="w-full min-w-[640px] text-left">
+                                <thead>
+                                    <tr className="border-b border-border bg-muted/20 text-xs text-muted-foreground">
+                                        <th className="px-4 py-2.5 font-medium">
+                                            Vencimento
+                                        </th>
+                                        <th className="px-4 py-2.5 font-medium">
+                                            Conta
+                                        </th>
+                                        <th className="hidden px-4 py-2.5 font-medium md:table-cell">
+                                            Prestador
+                                        </th>
+                                        <th className="hidden px-4 py-2.5 font-medium lg:table-cell">
+                                            Categoria
+                                        </th>
+                                        <th className="hidden px-4 py-2.5 font-medium sm:table-cell">
+                                            Ciclo
+                                        </th>
+                                        <th className="px-4 py-2.5 font-medium">
+                                            Valor
+                                        </th>
+                                        <th className="px-4 py-2.5 font-medium">
+                                            Status
+                                        </th>
+                                        <th className="px-4 py-2.5 text-right font-medium">
+                                            Ações
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedRows.map((occurrence) => (
+                                        <TableRow
+                                            key={occurrence.id}
+                                            occurrence={occurrence}
+                                            {...rowProps}
+                                        />
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <TablePagination
+                            page={page}
+                            totalPages={totalPages}
+                            totalItems={rows.length}
+                            pageSize={PAGE_SIZE}
+                            onPageChange={setPage}
+                        />
+                    </>
+                )}
+            </div>
         </div>
     );
 }

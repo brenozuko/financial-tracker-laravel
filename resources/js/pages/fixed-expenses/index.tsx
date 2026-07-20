@@ -181,11 +181,12 @@ export default function FixedExpensesIndex({
     >({});
 
     const [paying, setPaying] = useState<FixedExpenseOccurrence | null>(null);
-
     const [selectedMonth, setSelectedMonth] = useState(() =>
         todayIsoDate().slice(0, 7),
     );
-
+    const [skippedKeys, setSkippedKeys] = useState<Set<string>>(
+        () => new Set(),
+    );
     const [flashSuccess, setFlashSuccess] = useState<string | null>(null);
 
     useEffect(() => {
@@ -207,8 +208,6 @@ export default function FixedExpensesIndex({
 
         return map;
     }, [expenses]);
-
-    const [skippedKeys, setSkippedKeys] = useState<Set<string>>(() => new Set());
 
     const displayOccurrences = useMemo(() => {
         const byKey = new Map<string, FixedExpenseOccurrence>();
@@ -466,8 +465,7 @@ export default function FixedExpensesIndex({
         setSkippedKeys((prev) => new Set(prev).add(key));
         setOccurrences((prev) =>
             prev.filter(
-                (o) =>
-                    `${o.fixed_expense_id}-${o.due_date}` !== key,
+                (o) => `${o.fixed_expense_id}-${o.due_date}` !== key,
             ),
         );
         setFlashSuccess('Ocorr\u00eancia pulada.');

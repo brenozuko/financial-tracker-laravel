@@ -15,5 +15,7 @@ it('allows authenticated users to visit the fixed expenses page', function () {
 
     actingAs($user);
 
-    get(route('fixed-expenses'))->assertSuccessful();
+    get(route('fixed-expenses'))
+        ->assertSuccessful()
+        ->assertInertia(fn ($page) => $page->component('fixed-expenses/index'));
 });
