@@ -58,6 +58,29 @@ it('stores a new category', function () {
     expect(Category::query()->where('user_id', $user->id)->where('name', 'Custom Cat')->exists())->toBeTrue();
 });
 
+it('stores a quick default category', function () {
+    /** @var User $user */
+    $user = User::factory()->create();
+
+    actingAs($user)
+        ->post(route('categories.store'), [
+            'name' => 'Nova categoria 1',
+            'color' => '#6b7280',
+            'icon' => 'circle-ellipsis',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect(
+        Category::query()
+            ->where('user_id', $user->id)
+            ->where('name', 'Nova categoria 1')
+            ->where('color', '#6b7280')
+            ->where('icon', 'circle-ellipsis')
+            ->exists(),
+    )->toBeTrue();
+});
+
 it('rejects store when icon is not allowed', function () {
     /** @var User $user */
     $user = User::factory()->create();
